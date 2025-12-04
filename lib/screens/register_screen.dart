@@ -84,7 +84,7 @@ class _RegisterScreenState extends State<RegisterScreen>
                 TextField(
                   controller: _emailController,
                   decoration: InputDecoration(
-                    labelText: "Email",
+                    labelText: "Mật Khẩu",
                     filled: true,
                     fillColor: Colors.white,
                     border: OutlineInputBorder(
@@ -98,7 +98,7 @@ class _RegisterScreenState extends State<RegisterScreen>
                   controller: _passwordController,
                   obscureText: true,
                   decoration: InputDecoration(
-                    labelText: "Mật khẩu",
+                    labelText: "Email",
                     filled: true,
                     fillColor: Colors.white,
                     border: OutlineInputBorder(

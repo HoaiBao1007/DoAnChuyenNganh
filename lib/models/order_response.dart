@@ -61,7 +61,19 @@ class OrderResponse {
   final int id;
   final String userId;
   final String status;
+
+  /// Tổng tiền trước khi giảm
   final double totalAmount;
+
+  /// Mã voucher sử dụng (có thể null)
+  final String? voucherCode;
+
+  /// Số tiền giảm giá
+  final double discountAmount;
+
+  /// Tổng tiền cuối cùng phải trả
+  final double finalAmount;
+
   final DateTime? orderDate;
   final AddressResponse? shippingAddress;
   final AddressResponse? billingAddress;
@@ -73,6 +85,9 @@ class OrderResponse {
     required this.userId,
     required this.status,
     required this.totalAmount,
+    required this.voucherCode,
+    required this.discountAmount,
+    required this.finalAmount,
     required this.orderDate,
     required this.shippingAddress,
     required this.billingAddress,
@@ -92,9 +107,19 @@ class OrderResponse {
           : int.tryParse(json['id'].toString()) ?? 0,
       userId: json['userId']?.toString() ?? '',
       status: (json['status'] ?? json['orderStatus'] ?? '').toString(),
+
+      // totalAmount có thể là totalAmount hoặc totalPrice
       totalAmount: (json['totalAmount'] as num?)?.toDouble() ??
           (json['totalPrice'] as num?)?.toDouble() ??
           0.0,
+
+      // các field mới
+      voucherCode: json['voucherCode']?.toString(),
+      discountAmount: (json['discountAmount'] as num?)?.toDouble() ?? 0.0,
+      finalAmount: (json['finalAmount'] as num?)?.toDouble() ??
+          (json['finalPrice'] as num?)?.toDouble() ??
+          0.0,
+
       orderDate: json['orderDate'] != null
           ? DateTime.tryParse(json['orderDate'].toString())
           : null,

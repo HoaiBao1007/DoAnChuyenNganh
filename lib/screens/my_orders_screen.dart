@@ -4,10 +4,18 @@ import 'package:intl/intl.dart';
 
 import '../models/order_response.dart';
 import '../services/order_service.dart';
+import '../utils/format.dart';           // ⬅ thêm để dùng Format.currency
 import 'order_detail_screen.dart';
 
 class MyOrdersScreen extends StatefulWidget {
-  const MyOrdersScreen({super.key});
+  final String? statusFilter;   // PENDING / SHIPPING / DELIVERED / CANCELLED
+  final String? titleOverride;  // để đổi title cho 4 màn con
+
+  const MyOrdersScreen({
+    super.key,
+    this.statusFilter,
+    this.titleOverride,
+  });
 
   @override
   State<MyOrdersScreen> createState() => _MyOrdersScreenState();
@@ -26,6 +34,27 @@ class _MyOrdersScreenState extends State<MyOrdersScreen> {
     _loadOrders();
   }
 
+  /// Map status thật của đơn hàng sang nhóm tab
+  /// - PENDING     -> PENDING (chờ xác nhận)
+  /// - CONFIRMED   -> SHIPPING (chờ giao)
+  /// - DELIVERED   -> DELIVERED (đã giao)
+  /// - CANCELLED   -> CANCELLED (đã hủy)
+  String _mapStatusToTab(String rawStatus) {
+    final s = rawStatus.toUpperCase();
+    switch (s) {
+      case 'PENDING':
+        return 'PENDING';
+      case 'CONFIRMED':
+        return 'SHIPPING';
+      case 'DELIVERED':
+        return 'DELIVERED';
+      case 'CANCELLED':
+        return 'CANCELLED';
+      default:
+        return s;
+    }
+  }
+
   Future<void> _loadOrders() async {
     setState(() {
       _loading = true;
@@ -33,10 +62,36 @@ class _MyOrdersScreenState extends State<MyOrdersScreen> {
     });
 
     try {
-      final list = await _orderService.getMyOrders();
+      // luôn lấy hết đơn từ server
+      final allOrders = await _orderService.getMyOrders();
+
+      // nếu có filter → lọc lại trên client
+      List<OrderResponse> filtered = allOrders;
+      if (widget.statusFilter != null) {
+        filtered = allOrders
+            .where((o) => _mapStatusToTab(o.status) == widget.statusFilter)
+            .toList();
+      }
+
+      // 🔽 SẮP XẾP NGƯỢC LẠI: mới nhất lên trên
+      filtered.sort((a, b) {
+        final ad = a.orderDate;
+        final bd = b.orderDate;
+
+        if (ad == null && bd == null) {
+          // nếu không có ngày thì sort theo id giảm dần
+          return b.id.compareTo(a.id);
+        }
+        if (ad == null) return 1;   // đơn không có ngày xuống dưới
+        if (bd == null) return -1;
+
+        // ngày mới hơn (lớn hơn) đứng trước
+        return bd.compareTo(ad);
+      });
+
       if (!mounted) return;
       setState(() {
-        _orders = list;
+        _orders = filtered;
       });
     } catch (e) {
       if (!mounted) return;
@@ -74,7 +129,7 @@ class _MyOrdersScreenState extends State<MyOrdersScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Đơn hàng của tôi'),
+        title: Text(widget.titleOverride ?? 'Đơn hàng của tôi'),
       ),
       body: RefreshIndicator(
         onRefresh: _loadOrders,
@@ -109,7 +164,7 @@ class _MyOrdersScreenState extends State<MyOrdersScreen> {
           SizedBox(height: 100),
           Center(
             child: Text(
-              'Bạn chưa có đơn hàng nào',
+              'Không có đơn hàng phù hợp',
               style: TextStyle(color: Colors.grey),
             ),
           ),
@@ -141,7 +196,6 @@ class _MyOrdersScreenState extends State<MyOrdersScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // dòng trên: mã + trạng thái
                   Row(
                     children: [
                       Text(
@@ -176,14 +230,17 @@ class _MyOrdersScreenState extends State<MyOrdersScreen> {
                     style: const TextStyle(fontSize: 12, color: Colors.grey),
                   ),
                   const SizedBox(height: 6),
+
+                  // ⬇ Dùng FINAL_AMOUNT thay vì totalAmount
                   Text(
-                    'Tổng: ${o.totalAmount.toStringAsFixed(0)} VND',
+                    'Tổng: ${Format.currency(o.finalAmount)}',
                     style: const TextStyle(
                       fontSize: 15,
                       fontWeight: FontWeight.bold,
                       color: Colors.deepPurple,
                     ),
                   ),
+
                   const SizedBox(height: 4),
                   Text(
                     '${o.items.length} sản phẩm',

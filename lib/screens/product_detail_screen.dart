@@ -8,6 +8,10 @@ import '../models/cart_response.dart';
 import '../services/cart_service.dart';
 import '../utils/format.dart';
 
+// ⭐ Thêm import rating
+import '../services/rating_service.dart';
+import '../models/rating_summary.dart';
+
 import 'cart_screen.dart';
 import 'checkout_screen.dart';
 import 'login_screen.dart';
@@ -27,13 +31,87 @@ class ProductDetailScreen extends StatefulWidget {
 class _ProductDetailScreenState extends State<ProductDetailScreen> {
   final CartService _cartService = CartService();
 
-  bool _adding = false; // trạng thái cho "Thêm vào giỏ"
-  bool _buyingNow = false; // trạng thái cho "Mua ngay"
+  // ⭐ Thêm RatingService
+  final RatingService _ratingService = RatingService();
 
-  // ====== CHECK ĐĂNG NHẬP ======
+  bool _adding = false;
+  bool _buyingNow = false;
+
+  // ⭐ Thêm biến rating
+  RatingSummary? _ratingSummary;
+  bool _loadingRating = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadRating(); // ⭐ load rating
+  }
+
+  // ⭐ HÀM LOAD RATING
+  Future<void> _loadRating() async {
+    setState(() => _loadingRating = true);
+
+    try {
+      final summary =
+      await _ratingService.getRatingSummary(widget.product.id);
+
+      if (!mounted) return;
+      setState(() => _ratingSummary = summary);
+    } catch (e) {
+      print("Lỗi rating: $e");
+    } finally {
+      if (mounted) setState(() => _loadingRating = false);
+    }
+  }
+
+  // ⭐ HIỂN THỊ SAO
+  Widget _buildRatingRow() {
+    if (_ratingSummary == null) {
+      if (_loadingRating) {
+        return const SizedBox(
+          height: 20,
+          child: CircularProgressIndicator(strokeWidth: 2),
+        );
+      }
+      return const SizedBox.shrink();
+    }
+
+    final avg = _ratingSummary!.averageRating;
+    final count = _ratingSummary!.ratingCount;
+
+    // tính số sao
+    List<Widget> stars = [];
+    for (int i = 1; i <= 5; i++) {
+      IconData icon;
+      if (avg >= i) {
+        icon = Icons.star;
+      } else if (avg >= i - 0.5) {
+        icon = Icons.star_half;
+      } else {
+        icon = Icons.star_border;
+      }
+      stars.add(Icon(icon, size: 18, color: Colors.amber));
+    }
+
+    return Row(
+      children: [
+        ...stars,
+        const SizedBox(width: 6),
+        Text(avg.toStringAsFixed(1),
+            style: const TextStyle(fontSize: 13)),
+        const SizedBox(width: 4),
+        Text("($count đánh giá)",
+            style: const TextStyle(fontSize: 12, color: Colors.grey)),
+      ],
+    );
+  }
+
+  // ==================
+  // GIỮ NGUYÊN TOÀN BỘ CODE CỦA BẠN BÊN DƯỚI
+  // ==================
+
   Future<bool> _checkLoggedInAndGoLoginIfNeeded() async {
     final prefs = await SharedPreferences.getInstance();
-    // 🔥 token đang được lưu với key "token" (từ AuthService)
     final token = prefs.getString('token');
 
     if (token != null && token.isNotEmpty) {
@@ -41,8 +119,6 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
     }
 
     if (!mounted) return false;
-
-    // Chuyển sang màn đăng nhập
     await Navigator.push(
       context,
       MaterialPageRoute(builder: (_) => const LoginScreen()),
@@ -50,11 +126,17 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
     return false;
   }
 
-  // ================== THÊM VÀO GIỎ ==================
+  Future<String?> _getCurrentUserId() async {
+    final prefs = await SharedPreferences.getInstance();
+    final userId = prefs.getString('userId');
+    if (userId == null || userId.isEmpty) {
+      return null;
+    }
+    return userId;
+  }
+
   Future<void> _addToCart({bool goToCart = false}) async {
     if (_adding) return;
-
-    // Bắt buộc đăng nhập
     final ok = await _checkLoggedInAndGoLoginIfNeeded();
     if (!ok) return;
 
@@ -63,12 +145,11 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
     setState(() => _adding = true);
     try {
       await _cartService.addToCart(
-        productId: p.id, // int
+        productId: p.id,
         quantity: 1,
       );
 
       if (!mounted) return;
-
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Đã thêm sản phẩm vào giỏ hàng')),
       );
@@ -89,11 +170,8 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
     }
   }
 
-  // ================== MUA NGAY ==================
   Future<void> _buyNow() async {
     if (_buyingNow) return;
-
-    // Bắt buộc đăng nhập
     final ok = await _checkLoggedInAndGoLoginIfNeeded();
     if (!ok) return;
 
@@ -101,20 +179,14 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
 
     setState(() => _buyingNow = true);
     try {
-      // 1) Đảm bảo sản phẩm có trong cart (nếu đã có thì backend sẽ cộng dồn)
-      await _cartService.addToCart(
-        productId: p.id,
-        quantity: 1,
-      );
+      await _cartService.addToCart(productId: p.id, quantity: 1);
 
-      // 2) Lấy lại giỏ hàng mới nhất
       final cart = await _cartService.getMyCart();
-
-      // 3) Tìm đúng CartItem có productId tương ứng
       CartItem? selectedItem;
+
       try {
-        selectedItem = cart.items
-            .firstWhere((it) => it.productId == p.id.toString());
+        selectedItem =
+            cart.items.firstWhere((it) => it.productId == p.id.toString());
       } catch (_) {
         selectedItem = null;
       }
@@ -123,25 +195,33 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
         if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-              content:
-              Text('Không tìm thấy sản phẩm trong giỏ hàng để thanh toán')),
+            content:
+            Text('Không tìm thấy sản phẩm trong giỏ hàng để thanh toán'),
+          ),
         );
         return;
       }
 
-      // 4) Mở màn Checkout với danh sách chỉ có 1 item từ cart
+      final userId = await _getCurrentUserId();
+      if (userId == null || userId.isEmpty) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Không xác định được userId')),
+        );
+        return;
+      }
+
       final result = await Navigator.push<bool>(
         context,
         MaterialPageRoute(
           builder: (_) => CheckoutScreen(
-            selectedItems: [selectedItem!],   // 🔥 dùng selectedItem! vì đã kiểm tra null trước
+            selectedItems: [selectedItem!], // ✅ ép non-null vì đã check ở trên
+            userId: userId,
           ),
         ),
       );
 
-
       if (!mounted) return;
-
       if (result == true) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Đặt hàng thành công!')),
@@ -166,11 +246,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
       appBar: AppBar(
         backgroundColor: Colors.white,
         elevation: 0.5,
-        title: Text(
-          p.name,
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-        ),
+        title: Text(p.name, maxLines: 1, overflow: TextOverflow.ellipsis),
         actions: [
           IconButton(
             icon: const Icon(Icons.shopping_cart_outlined),
@@ -185,7 +261,6 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
       ),
       body: Column(
         children: [
-          // Ảnh sản phẩm
           AspectRatio(
             aspectRatio: 1,
             child: Hero(
@@ -194,15 +269,13 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                   ? Image.network(
                 p.imageUrl!,
                 fit: BoxFit.cover,
-                errorBuilder: (_, __, ___) => const Center(
-                  child: Icon(Icons.broken_image, size: 60),
-                ),
+                errorBuilder: (_, __, ___) =>
+                const Center(child: Icon(Icons.broken_image, size: 60)),
               )
                   : const Center(child: Icon(Icons.image, size: 60)),
             ),
           ),
 
-          // Thông tin sản phẩm
           Expanded(
             child: SingleChildScrollView(
               padding: const EdgeInsets.all(16),
@@ -216,7 +289,14 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                       fontWeight: FontWeight.bold,
                     ),
                   ),
+
+                  const SizedBox(height: 6),
+
+                  // ⭐ HIỂN THỊ SAO NGAY DƯỚI TÊN
+                  _buildRatingRow(),
+
                   const SizedBox(height: 8),
+
                   Text(
                     Format.currency(p.price),
                     style: const TextStyle(
@@ -225,9 +305,12 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                       color: Colors.deepPurple,
                     ),
                   ),
+
                   const SizedBox(height: 16),
                   const Divider(),
+
                   const SizedBox(height: 12),
+
                   const Text(
                     "Mô tả sản phẩm",
                     style: TextStyle(
@@ -235,6 +318,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                       fontWeight: FontWeight.w600,
                     ),
                   ),
+
                   const SizedBox(height: 8),
                   Text(
                     p.description?.isNotEmpty == true
@@ -242,6 +326,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                         : "Không có mô tả",
                     style: const TextStyle(fontSize: 14),
                   ),
+
                   const SizedBox(height: 80),
                 ],
               ),
@@ -250,7 +335,6 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
         ],
       ),
 
-      // Thanh dưới cùng
       bottomNavigationBar: SafeArea(
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
@@ -266,13 +350,14 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
           ),
           child: Row(
             children: [
-              // Thêm vào giỏ
               Expanded(
                 child: OutlinedButton(
-                  onPressed: _adding ? null : () => _addToCart(goToCart: false),
+                  onPressed:
+                  _adding ? null : () => _addToCart(goToCart: false),
                   style: OutlinedButton.styleFrom(
                     minimumSize: const Size(double.infinity, 50),
-                    side: const BorderSide(color: Colors.deepPurple),
+                    side:
+                    const BorderSide(color: Colors.deepPurple),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
                     ),
@@ -281,7 +366,8 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                       ? const SizedBox(
                     width: 22,
                     height: 22,
-                    child: CircularProgressIndicator(strokeWidth: 2),
+                    child:
+                    CircularProgressIndicator(strokeWidth: 2),
                   )
                       : const Text(
                     "Thêm vào giỏ",
@@ -290,8 +376,6 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                 ),
               ),
               const SizedBox(width: 12),
-
-              // Mua ngay
               Expanded(
                 child: ElevatedButton(
                   onPressed: _buyingNow ? null : _buyNow,
@@ -304,7 +388,10 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                   ),
                   child: Text(
                     _buyingNow ? "Đang xử lý..." : "Mua ngay",
-                    style: const TextStyle(fontSize: 16, color: Colors.white),
+                    style: const TextStyle(
+                      fontSize: 16,
+                      color: Colors.white,
+                    ),
                   ),
                 ),
               ),

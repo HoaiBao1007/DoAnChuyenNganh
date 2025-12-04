@@ -1,5 +1,4 @@
 // lib/services/order_service.dart
-
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 
@@ -33,6 +32,7 @@ class OrderService {
     return OrderResponse.fromJson(data);
   }
 
+  /// Lấy TẤT CẢ đơn hàng của user (không filter)
   Future<List<OrderResponse>> getMyOrders() async {
     final res = await ApiClient.get(
       ApiClient.ORDER_API_BASE_URL,
@@ -49,7 +49,7 @@ class OrderService {
       throw Exception("Lỗi tải đơn hàng [$status]");
     }
 
-    // ❗ vì API trả về LIST → parse thẳng List<dynamic>
+    // API trả về LIST
     final List<dynamic> list = jsonDecode(body);
 
     return list

@@ -2,7 +2,7 @@
 
 class ImageUrlHelper {
   // IP + port của product-service trên LAN
-  static const String backendHost = "192.168.1.55";
+  static const String backendHost = "192.168.1.127";
   static const String backendPort = "8081";
 
   /// Sửa URL ảnh từ /files/... hoặc localhost/... sang IP thật
