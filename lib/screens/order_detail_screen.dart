@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 import '../models/order_response.dart';
 import '../utils/format.dart';
 import '../utils/image_url_helper.dart';
+import 'rating_screen.dart';
 
 class OrderDetailScreen extends StatelessWidget {
   final OrderResponse order;
@@ -41,7 +42,7 @@ class OrderDetailScreen extends StatelessWidget {
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
-          // Thông tin chung
+          // Thông tin chung + tiền / voucher
           Card(
             shape:
             RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -62,15 +63,50 @@ class OrderDetailScreen extends StatelessWidget {
                     'Ngày đặt: ${_formatDate(order.orderDate)}',
                     style: const TextStyle(fontSize: 13),
                   ),
+                  const SizedBox(height: 8),
+
+                  // Tiền hàng (totalAmount trước giảm)
+                  Text(
+                    'Tiền hàng: ${Format.currency(order.totalAmount)}',
+                    style: const TextStyle(
+                      fontSize: 13,
+                    ),
+                  ),
+
+                  // Voucher dùng (nếu có)
+                  if (order.voucherCode != null &&
+                      order.voucherCode!.isNotEmpty) ...[
+                    const SizedBox(height: 4),
+                    Text(
+                      'Voucher: ${order.voucherCode}',
+                      style: const TextStyle(
+                        fontSize: 13,
+                      ),
+                    ),
+                  ],
+
+                  // Số tiền giảm
                   const SizedBox(height: 4),
                   Text(
-                    'Tổng tiền: ${Format.currency(order.totalAmount)}',
+                    'Giảm giá: -${Format.currency(order.discountAmount)}',
+                    style: const TextStyle(
+                      fontSize: 13,
+                      color: Colors.red,
+                    ),
+                  ),
+
+                  // Thành tiền cuối cùng (finalAmount)
+                  const SizedBox(height: 4),
+                  Text(
+                    'Thành tiền: ${Format.currency(order.finalAmount)}',
                     style: const TextStyle(
                       fontSize: 15,
                       color: Colors.deepPurple,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
+
+                  // Phương thức thanh toán
                   if (order.paymentMethod != null) ...[
                     const SizedBox(height: 4),
                     Text(
@@ -138,14 +174,13 @@ class OrderDetailScreen extends StatelessWidget {
                 children: [
                   const Text(
                     'Sản phẩm',
-                    style: TextStyle(
-                        fontSize: 15, fontWeight: FontWeight.bold),
+                    style:
+                    TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
                   ),
                   const SizedBox(height: 8),
                   ...items.map((item) {
-                    // 🔥 Sửa URL ảnh giống giỏ hàng
-                    final fixedImageUrl =
-                    ImageUrlHelper.fix(item.imageUrl);
+                    // Sửa URL ảnh giống giỏ hàng
+                    final fixedImageUrl = ImageUrlHelper.fix(item.imageUrl);
 
                     return Padding(
                       padding: const EdgeInsets.symmetric(vertical: 6),
@@ -165,10 +200,13 @@ class OrderDetailScreen extends StatelessWidget {
                                 fit: BoxFit.cover,
                                 errorBuilder: (_, __, ___) => Container(
                                   color: Colors.grey.shade200,
-                                  child: const Icon(Icons.broken_image),
+                                  child:
+                                  const Icon(Icons.broken_image),
                                 ),
                               )
-                                  : const Icon(Icons.image_not_supported),
+                                  : const Icon(
+                                Icons.image_not_supported,
+                              ),
                             ),
                           ),
                           const SizedBox(width: 10),
@@ -203,6 +241,37 @@ class OrderDetailScreen extends StatelessWidget {
                                     color: Colors.black54,
                                   ),
                                 ),
+                    if (order.status.toUpperCase() == 'DELIVERED') ...[
+                    const SizedBox(height: 4),
+                    TextButton.icon(
+                    onPressed: () async {
+                    final result = await Navigator.push<bool>(
+                    context,
+                    MaterialPageRoute(
+                    builder: (_) => RatingScreen(
+                    productId: item.productId,
+                    productName: item.productName,
+                    ),
+                    ),
+                    );
+                    if (result == true && context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text("Cảm ơn bạn đã đánh giá")),
+                    );
+                    }
+                    },
+                    icon: const Icon(Icons.star_border, size: 18, color: Colors.amber),
+                    label: const Text(
+                    "Đánh giá",
+                    style: TextStyle(fontSize: 12),
+                    ),
+                    style: TextButton.styleFrom(
+                    padding: EdgeInsets.zero,
+                    minimumSize: const Size(0, 0),
+                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                                )
+                                )
+                               ]
                               ],
                             ),
                           ),

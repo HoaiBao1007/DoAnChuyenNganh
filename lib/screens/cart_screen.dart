@@ -1,3 +1,6 @@
+import 'dart:convert'; // 👈 thêm
+import 'package:shared_preferences/shared_preferences.dart'; // 👈 thêm
+
 import 'package:flutter/material.dart';
 import '../models/cart_response.dart';
 import '../services/cart_service.dart';
@@ -27,15 +30,36 @@ class _CartScreenState extends State<CartScreen> {
   String fixUrl(String? url) {
     if (url == null || url.isEmpty) return '';
     return url
-        .replaceAll("localhost", "192.168.1.55")
-        .replaceAll("host.docker.internal", "192.168.1.55")
-        .replaceAll("productservice:8081", "192.168.1.55:8081");
+        .replaceAll("localhost", "192.168.1.127")
+        .replaceAll("host.docker.internal", "192.168.1.127")
+        .replaceAll("productservice:8081", "192.168.1.127:8081");
   }
 
   @override
   void initState() {
     super.initState();
     _loadCart();
+  }
+
+  /// 🔐 Lấy userId (sub) từ JWT lưu trong SharedPreferences
+  Future<String?> _getCurrentUserId() async {
+    final prefs = await SharedPreferences.getInstance();
+    final token = prefs.getString('token');
+    if (token == null || token.isEmpty) return null;
+
+    try {
+      final parts = token.split('.');
+      if (parts.length != 3) return null;
+
+      final payload =
+      utf8.decode(base64Url.decode(base64Url.normalize(parts[1])));
+      final data = jsonDecode(payload) as Map<String, dynamic>;
+
+      // Backend của bạn: "sub": "hbao"
+      return data['sub']?.toString();
+    } catch (_) {
+      return null;
+    }
   }
 
   Future<void> _loadCart() async {
@@ -167,11 +191,13 @@ class _CartScreenState extends State<CartScreen> {
                       : 'Bạn có chắc muốn xoá toàn bộ giỏ hàng không?'),
                   actions: [
                     TextButton(
-                      onPressed: () => Navigator.pop(context, false),
+                      onPressed: () =>
+                          Navigator.pop(context, false),
                       child: const Text('Huỷ'),
                     ),
                     TextButton(
-                      onPressed: () => Navigator.pop(context, true),
+                      onPressed: () =>
+                          Navigator.pop(context, true),
                       child: const Text('Xoá'),
                     ),
                   ],
@@ -431,8 +457,17 @@ class _CartScreenState extends State<CartScreen> {
               if (items.isEmpty) {
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(
-                      content:
-                      Text('Vui lòng chọn ít nhất 1 sản phẩm')),
+                      content: Text(
+                          'Vui lòng chọn ít nhất 1 sản phẩm')),
+                );
+                return;
+              }
+
+              // 🔥 Lấy userId từ token
+              final userId = await _getCurrentUserId();
+              if (userId == null || userId.isEmpty) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Không xác định được userId')),
                 );
                 return;
               }
@@ -440,8 +475,10 @@ class _CartScreenState extends State<CartScreen> {
               final ok = await Navigator.push<bool>(
                 context,
                 MaterialPageRoute(
-                  builder: (_) =>
-                      CheckoutScreen(selectedItems: items),
+                  builder: (_) => CheckoutScreen(
+                    selectedItems: items,
+                    userId: userId,     // 👈 truyền UUID
+                  ),
                 ),
               );
 

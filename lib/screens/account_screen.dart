@@ -1,5 +1,3 @@
-// lib/screens/account_screen.dart
-
 import 'package:flutter/material.dart';
 
 import '../services/auth_service.dart';
@@ -7,6 +5,8 @@ import '../services/auth_service.dart';
 import 'login_screen.dart';
 import 'my_orders_screen.dart';
 import 'notification_screen.dart';
+import 'edit_account_screen.dart';
+import 'voucher_wallet_screen.dart';
 
 class AccountScreen extends StatefulWidget {
   const AccountScreen({super.key});
@@ -42,12 +42,10 @@ class _AccountScreenState extends State<AccountScreen> {
 
   Future<void> _requireLoginAndRun(VoidCallback action) async {
     if (!_loggedIn) {
-      // chuyển sang Login
       await Navigator.push(
         context,
         MaterialPageRoute(builder: (_) => const LoginScreen()),
       );
-      // sau khi quay lại, reload trạng thái
       await _loadUserInfo();
       if (!_loggedIn) return;
     }
@@ -84,8 +82,8 @@ class _AccountScreenState extends State<AccountScreen> {
           // ====== THÔNG TIN USER ======
           Container(
             margin: const EdgeInsets.symmetric(horizontal: 16),
-            padding:
-            const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
+            padding: const EdgeInsets.symmetric(
+                horizontal: 16, vertical: 20),
             decoration: BoxDecoration(
               color: Colors.white,
               borderRadius: BorderRadius.circular(16),
@@ -160,6 +158,7 @@ class _AccountScreenState extends State<AccountScreen> {
           _card(
             child: Column(
               children: [
+                // TẤT CẢ ĐƠN
                 ListTile(
                   leading: const Icon(Icons.receipt_long,
                       color: Colors.deepPurple),
@@ -184,18 +183,22 @@ class _AccountScreenState extends State<AccountScreen> {
                       _orderStatusItem(
                         icon: Icons.inventory_2_outlined,
                         label: "Chờ xác nhận",
+                        statusFilter: "PENDING",
                       ),
                       _orderStatusItem(
                         icon: Icons.local_shipping_outlined,
                         label: "Chờ giao",
+                        statusFilter: "SHIPPING",
                       ),
                       _orderStatusItem(
                         icon: Icons.check_circle_outline,
                         label: "Đã giao",
+                        statusFilter: "DELIVERED",
                       ),
                       _orderStatusItem(
                         icon: Icons.cancel_outlined,
                         label: "Đã huỷ",
+                        statusFilter: "CANCELLED",
                       ),
                     ],
                   ),
@@ -206,19 +209,33 @@ class _AccountScreenState extends State<AccountScreen> {
 
           const SizedBox(height: 24),
 
-          // ====== CÀI ĐẶT / THÔNG TIN KHÁC ======
+          // ====== TIỆN ÍCH ======
           _sectionTitle("Tiện ích"),
           _card(
             child: Column(
               children: [
+                _menuItem(
+                  icon: Icons.manage_accounts_outlined,
+                  label: "Sửa thông tin tài khoản",
+                  onTap: () => _requireLoginAndRun(() {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => const EditAccountScreen(),
+                      ),
+                    );
+                  }),
+                ),
+                const Divider(height: 1),
                 _menuItem(
                   icon: Icons.location_on_outlined,
                   label: "Địa chỉ của tôi",
                   onTap: () => _requireLoginAndRun(() {
                     ScaffoldMessenger.of(context).showSnackBar(
                       const SnackBar(
-                          content: Text(
-                              "Tính năng địa chỉ đang được phát triển.")),
+                        content: Text(
+                            "Tính năng địa chỉ đang được phát triển."),
+                      ),
                     );
                   }),
                 ),
@@ -240,10 +257,11 @@ class _AccountScreenState extends State<AccountScreen> {
                   icon: Icons.card_giftcard_outlined,
                   label: "Ví Voucher",
                   onTap: () => _requireLoginAndRun(() {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                          content: Text(
-                              "Tính năng ví voucher đang được phát triển.")),
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => const VoucherWalletScreen(),
+                      ),
                     );
                   }),
                 ),
@@ -257,10 +275,11 @@ class _AccountScreenState extends State<AccountScreen> {
           if (_loggedIn)
             _card(
               child: ListTile(
-                leading: const Icon(Icons.logout, color: Colors.red),
+                leading: const Icon(Icons.logout,
+                    color: Colors.redAccent),
                 title: const Text(
                   "Đăng xuất",
-                  style: TextStyle(color: Colors.red),
+                  style: TextStyle(color: Colors.redAccent),
                 ),
                 onTap: _logout,
               ),
@@ -322,13 +341,17 @@ class _AccountScreenState extends State<AccountScreen> {
   Widget _orderStatusItem({
     required IconData icon,
     required String label,
+    String? statusFilter,
   }) {
     return InkWell(
       onTap: () => _requireLoginAndRun(() {
-        // Tạm thời mở MyOrdersScreen, sau này bạn có thể truyền filter trạng thái
         Navigator.push(
           context,
-          MaterialPageRoute(builder: (_) => const MyOrdersScreen()),
+          MaterialPageRoute(
+            builder: (_) => MyOrdersScreen(
+              statusFilter: statusFilter,
+            ),
+          ),
         );
       }),
       child: Column(

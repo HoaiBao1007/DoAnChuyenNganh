@@ -1,18 +1,26 @@
 // lib/screens/checkout_screen.dart
 
+import 'package:do_an_chuyen_nganh/models/VoucherResponse.dart';
+import 'package:do_an_chuyen_nganh/screens/order_detail_screen.dart';
 import 'package:flutter/material.dart';
 
 import '../models/create_order_request.dart';
 import '../models/cart_response.dart';
+
 import '../services/order_service.dart';
+import '../services/voucher_service.dart';
 
 class CheckoutScreen extends StatefulWidget {
   /// Danh sách sản phẩm được chọn trong giỏ hàng để thanh toán
   final List<CartItem> selectedItems;
 
+  /// User id dùng để gọi API voucher (có thể để null → không load voucher)
+  final String? userId;
+
   const CheckoutScreen({
     super.key,
     required this.selectedItems,
+    this.userId,
   });
 
   @override
@@ -22,6 +30,7 @@ class CheckoutScreen extends StatefulWidget {
 class _CheckoutScreenState extends State<CheckoutScreen> {
   final _formKey = GlobalKey<FormState>();
   final _orderService = OrderService();
+  final _voucherService = VoucherService();
 
   bool _submitting = false;
 
@@ -40,6 +49,47 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
   // PAYMENT + VOUCHER
   String _paymentMethod = "COD";
   final _voucherCtrl = TextEditingController();
+
+  // VOUCHER LIST
+  bool _loadingVouchers = false;
+  List<VoucherResponse> _vouchers = [];
+  VoucherResponse? _selectedVoucher;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadVouchers();
+  }
+
+  Future<void> _loadVouchers() async {
+    // Nếu chưa có userId thì không gọi API, tránh lỗi
+    final uid = widget.userId;
+    if (uid == null || uid.trim().isEmpty) {
+      return;
+    }
+
+    setState(() {
+      _loadingVouchers = true;
+    });
+    try {
+      final list = await _voucherService.getAvailableVouchers(uid);
+      if (!mounted) return;
+      setState(() {
+        _vouchers = list;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Lỗi tải voucher: $e")),
+      );
+    } finally {
+      if (mounted) {
+        setState(() {
+          _loadingVouchers = false;
+        });
+      }
+    }
+  }
 
   @override
   void dispose() {
@@ -113,8 +163,12 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
         SnackBar(content: Text("Đặt hàng thành công! Mã đơn: ${order.id}")),
       );
 
-      // báo về CartScreen để reload, xoá item đã thanh toán tuỳ logic
-      Navigator.pop(context, true);
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(
+          builder: (_) => OrderDetailScreen(order: order),
+        ),
+      );
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -123,6 +177,69 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     } finally {
       if (mounted) setState(() => _submitting = false);
     }
+  }
+
+  void _openVoucherPicker() {
+    if (_loadingVouchers) return;
+
+    if (_vouchers.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Bạn không có voucher khả dụng.")),
+      );
+      return;
+    }
+
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (ctx) {
+        return SafeArea(
+          child: SizedBox(
+            height: 400,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const SizedBox(height: 8),
+                const Text(
+                  "Chọn voucher",
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Expanded(
+                  child: ListView.builder(
+                    itemCount: _vouchers.length,
+                    itemBuilder: (_, i) {
+                      final v = _vouchers[i];
+                      return ListTile(
+                        title: Text(v.code),
+                        subtitle: Text(
+                          v.discountType == "PERCENT"
+                              ? "Giảm ${v.discountValue}%"
+                              : "Giảm ${v.discountValue}",
+                        ),
+
+                        onTap: () {
+                          setState(() {
+                            _selectedVoucher = v;
+                            _voucherCtrl.text = v.code;
+                          });
+                          Navigator.pop(context);
+                        },
+                      );
+                    },
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
   }
 
   @override
@@ -204,7 +321,40 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                 style: TextStyle(fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 8),
-              _input(_voucherCtrl, "Nhập mã nếu có", required: false),
+
+              // Ô nhập + nút chọn voucher
+              Row(
+                children: [
+                  Expanded(
+                    child: _input(
+                      _voucherCtrl,
+                      "Nhập mã nếu có",
+                      required: false,
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  ElevatedButton(
+                    onPressed: _loadingVouchers ? null : _openVoucherPicker,
+                    child: _loadingVouchers
+                        ? const SizedBox(
+                      width: 16,
+                      height: 16,
+                      child:
+                      CircularProgressIndicator(strokeWidth: 2),
+                    )
+                        : const Text("Chọn"),
+                  ),
+                ],
+              ),
+
+              if (_selectedVoucher != null) ...[
+                const SizedBox(height: 6),
+                Text(
+                  "Đã chọn: ${_selectedVoucher!.code} "
+                      "(${_selectedVoucher!.discountType == "PERCENT" ? "Giảm ${_selectedVoucher!.discountValue}%" : "Giảm ${_selectedVoucher!.discountValue}"})",
+                  style: const TextStyle(fontSize: 12, color: Colors.green),
+                ),
+              ],
 
               const SizedBox(height: 26),
               SizedBox(
