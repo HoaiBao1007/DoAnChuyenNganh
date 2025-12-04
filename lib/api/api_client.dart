@@ -10,6 +10,8 @@ class ApiClient {
   static const ORDER_API_BASE_URL = "http://192.168.1.127:8083/api/v1";
   static const NOTIFICATION_API_BASE_URL = "http://192.168.1.127:8085";
   static const String VOUCHER_API_BASE_URL = "http://192.168.1.127:8089";
+  static const String MINIGAME_API_BASE_URL = "http://192.168.1.127:8087";
+
 
   static Future<Map<String, String>> _headers({bool withAuth = true}) async {
     final prefs = await SharedPreferences.getInstance();

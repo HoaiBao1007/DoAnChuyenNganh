@@ -270,24 +270,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
               _input(_shippingPostalCtrl, "Mã bưu điện"),
 
               const SizedBox(height: 20),
-              const Text(
-                "Địa chỉ thanh toán",
-                style: TextStyle(fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 8),
-              _input(_billingAddress1Ctrl, "Địa chỉ dòng 1"),
-              const SizedBox(height: 8),
-              _input(
-                _billingAddress2Ctrl,
-                "Địa chỉ dòng 2 (không bắt buộc)",
-                required: false,
-              ),
-              const SizedBox(height: 8),
-              _input(_billingCityCtrl, "Thành phố"),
-              const SizedBox(height: 8),
-              _input(_billingPostalCtrl, "Mã bưu điện"),
 
-              const SizedBox(height: 20),
               const Text(
                 "Phương thức thanh toán",
                 style: TextStyle(fontWeight: FontWeight.bold),

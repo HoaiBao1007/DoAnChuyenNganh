@@ -6,28 +6,49 @@ import 'package:http/http.dart' as http;
 
 import '../api/api_client.dart';
 
-
 class VoucherService {
-  /// Lấy danh sách voucher có thể dùng của 1 user
-  Future<List<VoucherResponse>> getAvailableVouchers(String userId) async {
+  /// ============================================
+  /// 1) LẤY TOÀN BỘ VOUCHER (PUBLIC)
+  /// ============================================
+  Future<List<VoucherResponse>> getAllVouchers() async {
     final http.Response res = await ApiClient.get(
       ApiClient.VOUCHER_API_BASE_URL,
-      // ⚠ Nếu base URL của bạn đã là http://host:8089/voucher
-      // thì path chỉ cần '/vouchers/user/$userId/available'
-      "/voucher/vouchers/user/$userId/available",
-      withAuth: true,
+      "/voucher/vouchers",
+      withAuth: false, // API bạn cho không cần token
     );
 
     final status = res.statusCode;
-    final body = res.body;
-    print("GET AVAILABLE VOUCHERS RES[$status] ← $body");
+    print("GET ALL VOUCHERS RES[$status] ← ${res.body}");
 
     if (status < 200 || status >= 300) {
-      throw Exception("Lỗi tải voucher [$status]");
+      throw Exception("Lỗi tải danh sách voucher [$status]");
     }
 
-    final List<dynamic> list = jsonDecode(body);
-    return list
+    final List<dynamic> jsonList = jsonDecode(res.body);
+    return jsonList
+        .map((e) => VoucherResponse.fromJson(e as Map<String, dynamic>))
+        .toList();
+  }
+
+  /// ============================================
+  /// 2) LẤY DANH SÁCH VOUCHER CÓ THỂ DÙNG CỦA USER
+  /// ============================================
+  Future<List<VoucherResponse>> getAvailableVouchers(String userId) async {
+    final http.Response res = await ApiClient.get(
+      ApiClient.VOUCHER_API_BASE_URL,
+      "/voucher/vouchers/user/$userId/available",
+      withAuth: true, // cần token
+    );
+
+    final status = res.statusCode;
+    print("GET AVAILABLE VOUCHERS RES[$status] ← ${res.body}");
+
+    if (status < 200 || status >= 300) {
+      throw Exception("Lỗi tải danh sách voucher khả dụng [$status]");
+    }
+
+    final List<dynamic> jsonList = jsonDecode(res.body);
+    return jsonList
         .map((e) => VoucherResponse.fromJson(e as Map<String, dynamic>))
         .toList();
   }

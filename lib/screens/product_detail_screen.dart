@@ -369,7 +369,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
     return Scaffold(
       backgroundColor: const Color(0xfff8f4ff),
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: Color(0xFFE8F0FE), // 💙 đổi sang màu xanh
         elevation: 0.5,
         title: Text(
           p.name,

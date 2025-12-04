@@ -14,6 +14,7 @@ import 'product_detail_screen.dart';
 import 'cart_screen.dart';
 import 'notification_screen.dart';
 import '../state/cart_state.dart';
+import '../state/notification_state.dart'; // 👈 THÊM: state số thông báo
 import 'search_screen.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -103,20 +104,26 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xfff8f4ff),
+      backgroundColor: const Color(0xFFE8F0FE), // 💙 MÀU XANH NHẠT
       appBar: AppBar(
-        backgroundColor: Colors.transparent,
+        backgroundColor: const Color(0xFFE8F0FE), // 💙 AppBar trùng màu nền
         elevation: 0,
-        title: const Text("Xin chào 👋",
-            style: TextStyle(color: Colors.black87, fontSize: 22)),
+        title: const Text(
+          "Xin chào",
+          style: TextStyle(color: Colors.black87, fontSize: 22),
+        ),
         actions: [
+          // 🛒 GIỎ HÀNG CÓ BADGE
           ValueListenableBuilder<int>(
             valueListenable: CartState.cartCount,
             builder: (_, count, __) {
               return Stack(
                 children: [
                   IconButton(
-                    icon: const Icon(Icons.shopping_cart_outlined),
+                    icon: const Icon(
+                      Icons.shopping_cart_outlined,
+                      color: Colors.deepPurple, // 👈 dễ nhìn hơn
+                    ),
                     onPressed: () => Navigator.push(
                       context,
                       MaterialPageRoute(builder: (_) => const CartScreen()),
@@ -130,27 +137,70 @@ class _HomeScreenState extends State<HomeScreen> {
                         padding: const EdgeInsets.symmetric(
                             horizontal: 5, vertical: 2),
                         decoration: BoxDecoration(
-                            color: Colors.redAccent,
-                            borderRadius: BorderRadius.circular(10)),
+                          color: Colors.redAccent,
+                          borderRadius: BorderRadius.circular(10),
+                        ),
                         child: Text(
                           count.toString(),
                           style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 10,
-                              fontWeight: FontWeight.bold),
+                            color: Colors.white,
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                          ),
                         ),
                       ),
-                    )
+                    ),
                 ],
               );
             },
           ),
-          IconButton(
-            icon: const Icon(Icons.notifications_none),
-            onPressed: () => Navigator.push(
-              context,
-              MaterialPageRoute(builder: (_) => const NotificationScreen()),
-            ),
+
+          // 🔔 THÔNG BÁO CÓ BADGE
+          ValueListenableBuilder<int>(
+            valueListenable: NotificationState.unreadCount,
+            builder: (_, count, __) {
+              return Stack(
+                children: [
+                  IconButton(
+                    icon: const Icon(
+                      Icons.notifications_none,
+                      color: Colors.deepPurple, // 👈 đồng bộ màu
+                    ),
+                    onPressed: () async {
+                      await Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => const NotificationScreen(),
+                        ),
+                      );
+                      // tuỳ bạn: sau khi mở danh sách thông báo có thể reset về 0
+                      // NotificationState.unreadCount.value = 0;
+                    },
+                  ),
+                  if (count > 0)
+                    Positioned(
+                      right: 6,
+                      top: 6,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 5, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: Colors.redAccent,
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: Text(
+                          count.toString(),
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ),
+                ],
+              );
+            },
           ),
         ],
       ),
@@ -170,19 +220,20 @@ class _HomeScreenState extends State<HomeScreen> {
               const SizedBox(height: 20),
               _buildCategories(),
               const SizedBox(height: 20),
-
               const Padding(
                 padding: EdgeInsets.symmetric(horizontal: 16),
-                child: Text("Sản phẩm nổi bật",
-                    style:
-                    TextStyle(fontSize: 20, fontWeight: FontWeight.w600)),
+                child: Text(
+                  "Sản phẩm nổi bật",
+                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600),
+                ),
               ),
-
               loading
                   ? const Center(
-                  child: Padding(
-                      padding: EdgeInsets.all(40),
-                      child: CircularProgressIndicator()))
+                child: Padding(
+                  padding: EdgeInsets.all(40),
+                  child: CircularProgressIndicator(),
+                ),
+              )
                   : _buildProductGrid(),
             ],
           ),
@@ -202,19 +253,23 @@ class _HomeScreenState extends State<HomeScreen> {
           borderRadius: BorderRadius.circular(18),
           boxShadow: [
             BoxShadow(
-                color: Colors.black12.withOpacity(0.05),
-                blurRadius: 8,
-                offset: const Offset(0, 3))
+              color: Colors.black12.withOpacity(0.05),
+              blurRadius: 8,
+              offset: const Offset(0, 3),
+            )
           ],
         ),
         child: TextField(
           readOnly: true,
           onTap: () => Navigator.push(
-              context, MaterialPageRoute(builder: (_) => const SearchScreen())),
+            context,
+            MaterialPageRoute(builder: (_) => const SearchScreen()),
+          ),
           decoration: const InputDecoration(
-              hintText: "Tìm sản phẩm...",
-              border: InputBorder.none,
-              icon: Icon(Icons.search)),
+            hintText: "Tìm sản phẩm...",
+            border: InputBorder.none,
+            icon: Icon(Icons.search),
+          ),
         ),
       ),
     );
@@ -236,16 +291,21 @@ class _HomeScreenState extends State<HomeScreen> {
               color: [
                 Colors.deepPurple,
                 Colors.pinkAccent,
-                Colors.blueAccent
+                Colors.blueAccent,
               ][i],
             ),
             child: Center(
               child: Text(
-                ["Giảm giá tới 50% 🎉", "Hàng mới về hôm nay", "Miễn phí vận chuyển 🚚"][i],
+                [
+                  "Giảm giá tới 50% 🎉",
+                  "Hàng mới về hôm nay",
+                  "Miễn phí vận chuyển 🚚",
+                ][i],
                 style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 22,
-                    fontWeight: FontWeight.bold),
+                  color: Colors.white,
+                  fontSize: 22,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
             ),
           );
@@ -257,10 +317,7 @@ class _HomeScreenState extends State<HomeScreen> {
   // =============== CATEGORIES ===============
   Widget _buildCategories() {
     final cats = [
-      {"icon": Icons.phone_android, "name": "Điện thoại"},
-      {"icon": Icons.chair_outlined, "name": "Nội thất"},
-      {"icon": Icons.laptop_mac, "name": "Laptop"},
-      {"icon": Icons.watch_outlined, "name": "Đồng hồ"},
+      // bạn điền lại danh mục nếu cần
     ];
 
     return SizedBox(
@@ -275,14 +332,19 @@ class _HomeScreenState extends State<HomeScreen> {
             child: Column(
               children: [
                 CircleAvatar(
-                    radius: 28,
-                    backgroundColor: Colors.deepPurple.shade100,
-                    child:
-                    Icon(c["icon"] as IconData, color: Colors.deepPurple)),
+                  radius: 28,
+                  backgroundColor: Colors.deepPurple.shade100,
+                  child: Icon(
+                    c["icon"] as IconData,
+                    color: Colors.deepPurple,
+                  ),
+                ),
                 const SizedBox(height: 6),
-                Text(c["name"] as String,
-                    textAlign: TextAlign.center,
-                    style: const TextStyle(fontSize: 12))
+                Text(
+                  c["name"] as String,
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(fontSize: 12),
+                ),
               ],
             ),
           );
@@ -299,10 +361,11 @@ class _HomeScreenState extends State<HomeScreen> {
       itemCount: products.length,
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-          crossAxisCount: 2,
-          mainAxisExtent: 260,
-          crossAxisSpacing: 14,
-          mainAxisSpacing: 14),
+        crossAxisCount: 2,
+        mainAxisExtent: 260,
+        crossAxisSpacing: 14,
+        mainAxisSpacing: 14,
+      ),
       itemBuilder: (_, i) => _productCard(products[i]),
     );
   }
@@ -322,9 +385,10 @@ class _HomeScreenState extends State<HomeScreen> {
           borderRadius: BorderRadius.circular(18),
           boxShadow: [
             BoxShadow(
-                color: Colors.black12.withOpacity(0.05),
-                blurRadius: 8,
-                offset: const Offset(0, 3))
+              color: Colors.black12.withOpacity(0.05),
+              blurRadius: 8,
+              offset: const Offset(0, 3),
+            )
           ],
         ),
         child: Column(
@@ -339,53 +403,71 @@ class _HomeScreenState extends State<HomeScreen> {
                   borderRadius:
                   const BorderRadius.vertical(top: Radius.circular(18)),
                   image: DecorationImage(
-                      image: NetworkImage(p.imageUrl ?? ""), fit: BoxFit.cover),
+                    image: NetworkImage(p.imageUrl ?? ""),
+                    fit: BoxFit.cover,
+                  ),
                 ),
               ),
             ),
             Padding(
               padding: const EdgeInsets.all(10),
               child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Tên sản phẩm
-                    Text(p.name,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                            fontSize: 15, fontWeight: FontWeight.w600)),
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Tên sản phẩm
+                  Text(
+                    p.name,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
 
-                    const SizedBox(height: 4),
+                  // ⭐ Rating
+                  if (rating != null && rating.ratingCount > 0)
+                    Row(
+                      children: [
+                        const Icon(
+                          Icons.star,
+                          size: 14,
+                          color: Colors.amber,
+                        ),
+                        const SizedBox(width: 3),
+                        Text(
+                          rating.averageRating.toStringAsFixed(1),
+                          style: const TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        const SizedBox(width: 4),
+                        Text(
+                          "(${rating.ratingCount})",
+                          style: TextStyle(
+                            fontSize: 11,
+                            color: Colors.grey.shade700,
+                          ),
+                        ),
+                      ],
+                    ),
 
-                    // ⭐ Rating
-                    if (rating != null && rating.ratingCount > 0)
-                      Row(
-                        children: [
-                          const Icon(Icons.star,
-                              size: 14, color: Colors.amber),
-                          const SizedBox(width: 3),
-                          Text(rating.averageRating.toStringAsFixed(1),
-                              style: const TextStyle(
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.bold)),
-                          const SizedBox(width: 4),
-                          Text("(${rating.ratingCount})",
-                              style: TextStyle(
-                                  fontSize: 11,
-                                  color: Colors.grey.shade700)),
-                        ],
-                      ),
+                  const SizedBox(height: 4),
 
-                    const SizedBox(height: 4),
-
-                    // Giá
-                    Text(Format.currency(p.price),
-                        style: const TextStyle(
-                            fontSize: 15,
-                            color: Colors.deepPurple,
-                            fontWeight: FontWeight.bold)),
-                  ]),
-            )
+                  // Giá
+                  Text(
+                    Format.currency(p.price),
+                    style: const TextStyle(
+                      fontSize: 15,
+                      color: Colors.deepPurple,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ],
+              ),
+            ),
           ],
         ),
       ),

@@ -1,3 +1,4 @@
+import 'package:do_an_chuyen_nganh/screens/minigame_screen.dart';
 import 'package:flutter/material.dart';
 
 import '../services/auth_service.dart';
@@ -8,6 +9,7 @@ import 'notification_screen.dart';
 import 'edit_account_screen.dart';
 import 'voucher_wallet_screen.dart';
 import 'my_ratings_screen.dart';
+import 'all_vouchers_screen.dart';
 
 class AccountScreen extends StatefulWidget {
   const AccountScreen({super.key});
@@ -266,7 +268,28 @@ class _AccountScreenState extends State<AccountScreen> {
                   }),
                 ),
                 const Divider(height: 1),
-
+                _menuItem(
+                  icon: Icons.casino_outlined,
+                  label: "Mini game",
+                  onTap: () => _requireLoginAndRun(() {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => const MinigameScreen()),
+                    );
+                  }),
+                ),
+                _menuItem(
+                  icon: Icons.reviews_outlined,
+                  label: "Toàn bộ voucher",
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => const AllVouchersScreen(),
+                        ),
+                      );
+                    },
+                ),
                 const Divider(height: 1),
                 _menuItem(
                   icon: Icons.card_giftcard_outlined,

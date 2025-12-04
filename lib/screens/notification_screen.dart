@@ -4,7 +4,8 @@ import 'package:flutter/material.dart';
 
 import '../models/app_notification.dart';
 import '../services/notification_service.dart';
-import '../utils/format.dart'; // dùng lại Format.datetime nếu bạn có, không thì format tạm
+import '../utils/format.dart';
+import '../state/notification_state.dart'; // 👈 dùng để cập nhật badge
 
 class NotificationScreen extends StatefulWidget {
   const NotificationScreen({super.key});
@@ -40,6 +41,10 @@ class _NotificationScreenState extends State<NotificationScreen> {
         _items = list;
         _loading = false;
       });
+
+      // 👉 Cập nhật số thông báo chưa đọc
+      final unread = list.where((e) => !e.read).length;
+      NotificationState.unreadCount.value = unread;
     } catch (e) {
       if (!mounted) return;
       setState(() {
@@ -56,6 +61,12 @@ class _NotificationScreenState extends State<NotificationScreen> {
         setState(() {
           n.read = true; // update UI
         });
+
+        // 👉 Giảm số chưa đọc trong badge
+        final current = NotificationState.unreadCount.value;
+        if (current > 0) {
+          NotificationState.unreadCount.value = current - 1;
+        }
       } catch (e) {
         if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
@@ -68,8 +79,7 @@ class _NotificationScreenState extends State<NotificationScreen> {
   }
 
   String _formatTime(DateTime dt) {
-    // Nếu bạn đã có Format.datetime hãy dùng cái đó
-    return Format.dateTime(dt); // hoặc tự implement
+    return Format.dateTime(dt);
   }
 
   @override
