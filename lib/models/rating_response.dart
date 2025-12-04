@@ -1,5 +1,8 @@
+// lib/models/rating_response.dart
+
 class RatingResponse {
   final int id;
+  final int productId;
   final String userId;
   final String username;
   final double ratingValue;
@@ -8,6 +11,7 @@ class RatingResponse {
 
   RatingResponse({
     required this.id,
+    required this.productId,
     required this.userId,
     required this.username,
     required this.ratingValue,
@@ -20,6 +24,9 @@ class RatingResponse {
       id: json['id'] is int
           ? json['id'] as int
           : int.tryParse(json['id'].toString()) ?? 0,
+      productId: json['productId'] is int
+          ? json['productId'] as int
+          : int.tryParse(json['productId'].toString()) ?? 0,
       userId: json['userId']?.toString() ?? '',
       username: json['username']?.toString() ?? '',
       ratingValue: (json['ratingValue'] as num?)?.toDouble() ?? 0.0,
@@ -27,23 +34,6 @@ class RatingResponse {
       createdAt: json['createdAt'] != null
           ? DateTime.tryParse(json['createdAt'].toString())
           : null,
-    );
-  }
-}
-
-class RatingSummaryResponse {
-  final double averageRating;
-  final int totalRatings;
-
-  RatingSummaryResponse({
-    required this.averageRating,
-    required this.totalRatings,
-  });
-
-  factory RatingSummaryResponse.fromJson(Map<String, dynamic> json) {
-    return RatingSummaryResponse(
-      averageRating: (json['averageRating'] as num?)?.toDouble() ?? 0.0,
-      totalRatings: (json['totalRatings'] as num?)?.toInt() ?? 0,
     );
   }
 }

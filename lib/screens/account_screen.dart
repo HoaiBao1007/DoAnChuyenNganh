@@ -7,6 +7,7 @@ import 'my_orders_screen.dart';
 import 'notification_screen.dart';
 import 'edit_account_screen.dart';
 import 'voucher_wallet_screen.dart';
+import 'my_ratings_screen.dart';
 
 class AccountScreen extends StatefulWidget {
   const AccountScreen({super.key});
@@ -252,6 +253,20 @@ class _AccountScreenState extends State<AccountScreen> {
                     );
                   }),
                 ),
+                _menuItem(
+                  icon: Icons.reviews_outlined,
+                  label: "Lịch sử đánh giá",
+                  onTap: () => _requireLoginAndRun(() {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => const MyRatingsScreen(),
+                      ),
+                    );
+                  }),
+                ),
+                const Divider(height: 1),
+
                 const Divider(height: 1),
                 _menuItem(
                   icon: Icons.card_giftcard_outlined,
