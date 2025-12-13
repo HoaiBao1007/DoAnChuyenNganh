@@ -8,6 +8,7 @@ import '../services/minigame_service.dart';
 import '../models/minigame_history.dart';
 import '../utils/format.dart';
 import 'minigame_history_screen.dart';
+import 'card_flip_game_screen.dart'; // màn game lật thẻ
 
 class MinigameScreen extends StatefulWidget {
   const MinigameScreen({super.key});
@@ -74,15 +75,20 @@ class _MinigameScreenState extends State<MinigameScreen> {
   String _mapMessageToLabel(String msg) {
     msg = msg.toLowerCase();
 
+    // Các case cụ thể được backend dùng
     if (msg.contains("20 điểm")) return "+20 điểm";
     if (msg.contains("10 điểm")) return "+10 điểm";
     if (msg.contains("legendary")) return "Legendary";
     if (msg.contains("voucher lớn")) return "Voucher lớn";
     if (msg.contains("voucher nhỏ")) return "Voucher nhỏ";
 
-    // còn lại xem như "Trượt"
+    // 🔥 Nếu trúng điểm nhưng không phải 10 hoặc 20 (ví dụ 30 điểm)
+    if (msg.contains("điểm")) return "+20 điểm";
+
+    // Mặc định: trượt
     return "Trượt";
   }
+
 
   Future<void> _spin() async {
     if (_spinning) return;
@@ -216,7 +222,6 @@ class _MinigameScreenState extends State<MinigameScreen> {
                     ),
                   ),
                   const SizedBox(height: 8),
-
                   const SizedBox(height: 16),
                   SizedBox(
                     height: 260,
@@ -274,6 +279,11 @@ class _MinigameScreenState extends State<MinigameScreen> {
 
             const SizedBox(height: 20),
 
+            // ====== GAME LẬT THẺ ======
+            _buildFlipCardGameCard(),
+
+            const SizedBox(height: 20),
+
             // ====== LỊCH SỬ MỚI NHẤT + LINK XEM TẤT CẢ ======
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -324,6 +334,70 @@ class _MinigameScreenState extends State<MinigameScreen> {
               ),
           ],
         ),
+      ),
+    );
+  }
+
+  // ====== CARD GAME LẬT THẺ ======
+  Widget _buildFlipCardGameCard() {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black12.withOpacity(0.05),
+            blurRadius: 8,
+            offset: const Offset(0, 3),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            "Game lật thẻ",
+            style: TextStyle(
+              fontWeight: FontWeight.w600,
+              fontSize: 16,
+            ),
+          ),
+          const SizedBox(height: 8),
+          const Text(
+            "Có 6 thẻ bí ẩn, trong đó 3 thẻ có quà và 3 thẻ trống. "
+                "Hãy chọn 1 thẻ để nhận phần thưởng!",
+            style: TextStyle(fontSize: 13),
+          ),
+          const SizedBox(height: 12),
+          SizedBox(
+            width: double.infinity,
+            child: OutlinedButton(
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => const CardFlipGameScreen(), // ✅ ĐÚNG TÊN CLASS
+                  ),
+                );
+              },
+              style: OutlinedButton.styleFrom(
+                side: const BorderSide(color: Colors.deepPurple),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 12,
+                ),
+              ),
+              child: const Text(
+                "Chơi game lật thẻ",
+                style: TextStyle(color: Colors.deepPurple),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

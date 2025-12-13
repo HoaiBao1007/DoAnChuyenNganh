@@ -7,7 +7,7 @@ import '../models/app_notification.dart';
 import 'auth_service.dart';
 
 class NotificationService {
-  final String baseUrl = 'http://192.168.1.127:8085';
+  final String baseUrl = 'http://192.168.110.18:8085';
   final AuthService _authService = AuthService();
 
   /// Lấy danh sách thông báo của user hiện tại

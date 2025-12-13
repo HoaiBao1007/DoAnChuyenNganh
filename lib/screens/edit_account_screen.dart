@@ -1,7 +1,9 @@
 // lib/screens/edit_account_screen.dart
 
 import 'package:flutter/material.dart';
-import '../services/auth_service.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+
+import '../services/user_service.dart';
 
 class EditAccountScreen extends StatefulWidget {
   const EditAccountScreen({super.key});
@@ -12,64 +14,48 @@ class EditAccountScreen extends StatefulWidget {
 
 class _EditAccountScreenState extends State<EditAccountScreen> {
   final _formKey = GlobalKey<FormState>();
+
+  final _nameCtrl = TextEditingController();
   final _emailCtrl = TextEditingController();
-  final _currentPwdCtrl = TextEditingController();
   final _newPwdCtrl = TextEditingController();
 
-  final AuthService _authService = AuthService();
+  final UserService _userService = UserService();
 
   bool _loading = false;
-  String? _userId; // lấy từ API /user/users/me
 
   @override
   void initState() {
     super.initState();
-    _loadProfile();
+    _loadProfileFromLocal();
   }
 
-  Future<void> _loadProfile() async {
-    try {
-      final profile = await _authService.getMyProfile();
-      if (!mounted) return;
-      setState(() {
-        _userId = profile.id;
-        _emailCtrl.text = profile.email ?? '';
-      });
-    } catch (e) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Lỗi lấy thông tin tài khoản: $e')),
-      );
-    }
+  Future<void> _loadProfileFromLocal() async {
+    final prefs = await SharedPreferences.getInstance();
+    _nameCtrl.text = prefs.getString('name') ?? '';
+    _emailCtrl.text = prefs.getString('email') ?? '';
+    setState(() {});
   }
 
   Future<void> _save() async {
     if (!_formKey.currentState!.validate()) return;
-    if (_userId == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Không xác định được tài khoản.')),
-      );
-      return;
-    }
+
+    final name = _nameCtrl.text.trim();
+    final email = _emailCtrl.text.trim();
+    final newPw = _newPwdCtrl.text.trim();
 
     setState(() => _loading = true);
     try {
-      await _authService.updateAccount(
-        userId: _userId!,
-        email: _emailCtrl.text.trim(),
-        newPassword: _newPwdCtrl.text.trim().isEmpty
-            ? null
-            : _newPwdCtrl.text.trim(),
-        currentPassword: _currentPwdCtrl.text.trim().isEmpty
-            ? null
-            : _currentPwdCtrl.text.trim(),
+      await _userService.updateProfile(
+        name: name,
+        email: email,
+        password: newPw.isNotEmpty ? newPw : null,
       );
 
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Cập nhật tài khoản thành công')),
       );
-      Navigator.pop(context);
+      Navigator.pop(context, true);
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -82,8 +68,8 @@ class _EditAccountScreenState extends State<EditAccountScreen> {
 
   @override
   void dispose() {
+    _nameCtrl.dispose();
     _emailCtrl.dispose();
-    _currentPwdCtrl.dispose();
     _newPwdCtrl.dispose();
     super.dispose();
   }
@@ -94,12 +80,39 @@ class _EditAccountScreenState extends State<EditAccountScreen> {
       appBar: AppBar(
         title: const Text('Sửa thông tin tài khoản'),
       ),
+      backgroundColor: const Color(0xfff8f4ff),
       body: Padding(
         padding: const EdgeInsets.all(16),
         child: Form(
           key: _formKey,
           child: ListView(
             children: [
+              // ====== NAME ======
+              const Text(
+                'Họ tên',
+                style: TextStyle(fontWeight: FontWeight.w600),
+              ),
+              const SizedBox(height: 4),
+              TextFormField(
+                controller: _nameCtrl,
+                decoration: InputDecoration(
+                  hintText: 'Nhập họ tên',
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  filled: true,
+                  fillColor: Colors.white,
+                ),
+                validator: (v) {
+                  if (v == null || v.trim().isEmpty) {
+                    return 'Họ tên không được để trống';
+                  }
+                  return null;
+                },
+              ),
+              const SizedBox(height: 16),
+
+              // ====== EMAIL ======
               const Text(
                 'Email',
                 style: TextStyle(fontWeight: FontWeight.w600),
@@ -128,25 +141,7 @@ class _EditAccountScreenState extends State<EditAccountScreen> {
               ),
               const SizedBox(height: 16),
 
-              const Text(
-                'Mật khẩu hiện tại (để đổi mật khẩu)',
-                style: TextStyle(fontWeight: FontWeight.w600),
-              ),
-              const SizedBox(height: 4),
-              TextFormField(
-                controller: _currentPwdCtrl,
-                obscureText: true,
-                decoration: InputDecoration(
-                  hintText: 'Nhập mật khẩu hiện tại (có thể bỏ trống nếu chỉ đổi email)',
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  filled: true,
-                  fillColor: Colors.white,
-                ),
-              ),
-              const SizedBox(height: 16),
-
+              // ====== NEW PASSWORD ======
               const Text(
                 'Mật khẩu mới',
                 style: TextStyle(fontWeight: FontWeight.w600),

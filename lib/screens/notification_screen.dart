@@ -170,12 +170,15 @@ class _NotificationScreenState extends State<NotificationScreen> {
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        'Đơn hàng #${n.orderId} • ${_formatTime(n.createdAt)}',
+                        n.orderId != null
+                            ? 'Đơn hàng #${n.orderId} • ${_formatTime(n.createdAt)}'
+                            : _formatTime(n.createdAt),            // không có orderId thì chỉ hiện thời gian
                         style: TextStyle(
                           fontSize: 12,
                           color: Colors.grey.shade600,
                         ),
                       ),
+
                     ],
                   ),
                 ),

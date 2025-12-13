@@ -30,9 +30,9 @@ class _CartScreenState extends State<CartScreen> {
   String fixUrl(String? url) {
     if (url == null || url.isEmpty) return '';
     return url
-        .replaceAll("localhost", "192.168.1.127")
-        .replaceAll("host.docker.internal", "192.168.1.127")
-        .replaceAll("productservice:8081", "192.168.1.127:8081");
+        .replaceAll("localhost", "192.168.110.18")
+        .replaceAll("host.docker.internal", "192.168.110.18")
+        .replaceAll("productservice:8081", "192.168.110.18:8081");
   }
 
   @override

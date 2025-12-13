@@ -1,36 +1,49 @@
-// lib/models/app_notification.dart
-
 class AppNotification {
   final int id;
   final String userId;
-  final String orderId;
+  final int? orderId;
   final String message;
-  final String type;
-  final String status;
   final DateTime createdAt;
-  bool read; // cho phép cập nhật trạng thái đã đọc trên UI
+  bool read;
+  final String? type;   // nếu BE có trường type
+  final String? title;  // nếu BE có trường title
 
   AppNotification({
     required this.id,
     required this.userId,
-    required this.orderId,
     required this.message,
-    required this.type,
-    required this.status,
     required this.createdAt,
-    required this.read,
+    this.orderId,
+    this.read = false,
+    this.type,
+    this.title,
   });
 
   factory AppNotification.fromJson(Map<String, dynamic> json) {
+    int _parseInt(dynamic v) {
+      if (v == null) return 0;
+      if (v is int) return v;
+      if (v is num) return v.toInt();
+      if (v is String) return int.tryParse(v) ?? 0;
+      return 0;
+    }
+
+    DateTime _parseDate(dynamic v) {
+      if (v is String) {
+        return DateTime.tryParse(v) ?? DateTime.now();
+      }
+      return DateTime.now();
+    }
+
     return AppNotification(
-      id: json['id'] as int,
-      userId: json['userId'] as String,
-      orderId: json['orderId'] as String,
-      message: json['message'] as String,
-      type: json['type'] as String,
-      status: json['status'] as String,
-      createdAt: DateTime.parse(json['createdAt'] as String),
-      read: json['read'] as bool,
+      id: _parseInt(json['id']),
+      userId: json['userId']?.toString() ?? '',
+      orderId: json['orderId'] != null ? _parseInt(json['orderId']) : null,
+      message: json['message']?.toString() ?? '',
+      createdAt: _parseDate(json['createdAt']),
+      read: (json['read'] as bool?) ?? false,
+      type: json['type']?.toString(),
+      title: json['title']?.toString(),
     );
   }
 }

@@ -113,4 +113,35 @@ class MinigameService {
 
     throw Exception("Lỗi đổi voucher [$status]: $body");
   }
+
+  /// 🎴 GAME LẬT THẺ NÂNG CAO
+  /// POST /minigame/card-flip-advanced/{userId}?choice=1..6
+  Future<String> flipCard({required int choice}) async {
+    final userId = await _getUserId();
+    if (userId == null) {
+      throw Exception("Bạn chưa đăng nhập");
+    }
+
+    if (choice < 1 || choice > 6) {
+      throw Exception("Lựa chọn không hợp lệ (1–6).");
+    }
+
+    final http.Response res = await ApiClient.post(
+      ApiClient.MINIGAME_API_BASE_URL,
+      "/minigame/card-flip-advanced/$userId?choice=$choice",
+      {}, // body rỗng
+      withAuth: true,
+    );
+
+    final status = res.statusCode;
+    final body = res.body.toString();
+    print("CARD FLIP RES[$status] ← $body");
+
+    if (status >= 200 && status < 300) {
+      // Backend trả plain text: "🎉 Xuất sắc! Bạn nhận được 50 điểm! ..."
+      return body;
+    }
+
+    throw Exception("Lỗi chơi game lật thẻ [$status]: $body");
+  }
 }

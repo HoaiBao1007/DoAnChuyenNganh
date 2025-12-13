@@ -24,7 +24,7 @@ class Product {
       if (raw.startsWith("http")) {
         finalUrl = raw;   // backend đã trả full URL
       } else {
-        finalUrl = "http://192.168.1.127:8081$raw"; // backend trả path
+        finalUrl = "http://192.168.110.18:8081$raw"; // backend trả path
       }
     }
 

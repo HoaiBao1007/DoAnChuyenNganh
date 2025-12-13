@@ -4,13 +4,13 @@ import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
 class ApiClient {
-  static const USER_API_BASE_URL = "http://192.168.1.127:8080";
-  static const PRODUCT_API_BASE_URL = "http://192.168.1.127:8081/api/v1";
-  static const CART_API_BASE_URL = "http://192.168.1.127:8082/api/v1/carts";
-  static const ORDER_API_BASE_URL = "http://192.168.1.127:8083/api/v1";
-  static const NOTIFICATION_API_BASE_URL = "http://192.168.1.127:8085";
-  static const String VOUCHER_API_BASE_URL = "http://192.168.1.127:8089";
-  static const String MINIGAME_API_BASE_URL = "http://192.168.1.127:8087";
+  static const USER_API_BASE_URL = "http://192.168.110.18:8080";
+  static const PRODUCT_API_BASE_URL = "http://192.168.110.18:8081/api/v1";
+  static const CART_API_BASE_URL = "http://192.168.110.18:8082/api/v1/carts";
+  static const ORDER_API_BASE_URL = "http://192.168.110.18:8083/api/v1";
+  static const NOTIFICATION_API_BASE_URL = "http://192.168.110.18:8085";
+  static const String VOUCHER_API_BASE_URL = "http://192.168.110.18:8089";
+  static const String MINIGAME_API_BASE_URL = "http://192.168.110.18:8087";
 
 
   static Future<Map<String, String>> _headers({bool withAuth = true}) async {
